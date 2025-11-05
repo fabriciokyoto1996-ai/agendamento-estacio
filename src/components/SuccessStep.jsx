@@ -10,6 +10,7 @@ import {
   Award,
   Printer,
   PlusCircle,
+  Phone
 } from 'lucide-react';
 
 const SuccessStep = ({ appointment, onNewAppointment }) => {
@@ -29,6 +30,16 @@ const SuccessStep = ({ appointment, onNewAppointment }) => {
   // 🔢 Formata CPF
   const formatCPF = (cpf) =>
     cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+
+  // 📱 Formata telefone
+  const formatPhone = (phone) => {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length <= 2) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10)
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  };
 
   // 🖨️ Imprime comprovante
   const handlePrint = () => window.print();
@@ -81,6 +92,19 @@ const SuccessStep = ({ appointment, onNewAppointment }) => {
               <p className="text-sm font-semibold text-gray-600">CPF</p>
               <p className="text-lg font-bold text-gray-800">
                 {formatCPF(appointment.cpf)}
+              </p>
+            </div>
+          </div>
+
+          {/* Telefone */}
+          <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl">
+            <Phone className="h-6 w-6 text-cyan-600 mt-1" />
+            <div>
+              <p className="text-sm font-semibold text-gray-600">
+                Telefone Celular
+              </p>
+              <p className="text-lg font-bold text-gray-800">
+                {formatPhone(appointment.phone)}
               </p>
             </div>
           </div>

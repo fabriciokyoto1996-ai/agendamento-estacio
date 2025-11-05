@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Calendar, Clock, User, CreditCard, Award } from 'lucide-react';
+import { CheckCircle, Calendar, Clock, User, CreditCard, Award, Phone } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { saveAppointment } from '@/lib/storage';
 
@@ -25,6 +25,16 @@ const ConfirmationStep = ({ formData, selectedSlot, onConfirm, onCancel }) => {
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
   };
 
+  // 📱 Formata o telefone
+  const formatPhone = (phone) => {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length <= 2) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10)
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  };
+
   // 💾 Confirma e salva o agendamento no Firestore
   const handleConfirm = async () => {
     setLoading(true);
@@ -33,6 +43,7 @@ const ConfirmationStep = ({ formData, selectedSlot, onConfirm, onCancel }) => {
       const appointment = {
         name: formData.name,
         cpf: formData.cpf,
+        phone: formData.phone, // <- novo campo
         program: formData.program,
         date: selectedSlot.date,
         time: selectedSlot.time,
@@ -101,6 +112,17 @@ const ConfirmationStep = ({ formData, selectedSlot, onConfirm, onCancel }) => {
             <div>
               <p className="text-sm font-semibold text-gray-600">CPF</p>
               <p className="text-lg font-bold text-gray-800">{formatCPF(formData.cpf)}</p>
+            </div>
+          </div>
+
+          {/* Telefone */}
+          <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl">
+            <Phone className="h-6 w-6 text-cyan-600 mt-1" />
+            <div>
+              <p className="text-sm font-semibold text-gray-600">Telefone Celular</p>
+              <p className="text-lg font-bold text-gray-800">
+                {formatPhone(formData.phone)}
+              </p>
             </div>
           </div>
 

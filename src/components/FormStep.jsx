@@ -9,6 +9,7 @@ import { getAppointments } from '@/lib/storage';
 const FormStep = ({ onSubmit }) => {
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
+  const [phone, setPhone] = useState('');
   const [program, setProgram] = useState('');
   const { toast } = useToast();
 
@@ -22,6 +23,27 @@ const FormStep = ({ onSubmit }) => {
     if (value.length <= 11) {
       setCpf(value);
     }
+  };
+
+  const handlePhoneChange = (e) => {
+    // mantém apenas números e formata (XX) XXXXXXXX ou (XX) XXXXX-XXXX
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    setPhone(value);
+  };
+
+  const formatPhone = (value) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length <= 2) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10)
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  };
+
+  const validatePhone = (phone) => {
+    const clean = phone.replace(/\D/g, '');
+    return clean.length >= 10 && clean.length <= 11;
   };
 
   const handleSubmit = async (e) => {
@@ -45,6 +67,15 @@ const FormStep = ({ onSubmit }) => {
       return;
     }
 
+    if (!validatePhone(phone)) {
+      toast({
+        title: "Erro",
+        description: "Telefone inválido. Insira DDD + número.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!program) {
       toast({
         title: "Erro",
@@ -54,7 +85,6 @@ const FormStep = ({ onSubmit }) => {
       return;
     }
 
-    // Obtém lista (async) e garante que seja um array
     let appointments = [];
     try {
       appointments = await getAppointments();
@@ -75,8 +105,7 @@ const FormStep = ({ onSubmit }) => {
       return;
     }
 
-    // Tudo ok — chama o onSubmit (vai para seleção de data/horário)
-    onSubmit({ name, cpf, program });
+    onSubmit({ name, cpf, phone, program });
   };
 
   return (
@@ -144,6 +173,21 @@ const FormStep = ({ onSubmit }) => {
               className="h-12 rounded-xl border-2 border-gray-200 focus:border-cyan-500"
               placeholder="00000000000"
               maxLength={11}
+            />
+            <p className="text-xs text-red-500 font-medium">Apenas números</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="text-sm font-semibold text-gray-700">
+              TELEFONE CELULAR (COM DDD)
+            </Label>
+            <Input
+              id="phone"
+              type="text"
+              value={formatPhone(phone)}
+              onChange={handlePhoneChange}
+              className="h-12 rounded-xl border-2 border-gray-200 focus:border-cyan-500"
+              placeholder="(99) 99999-9999"
             />
             <p className="text-xs text-red-500 font-medium">Apenas números</p>
           </div>

@@ -4,7 +4,7 @@ import { exportToExcel } from "@/lib/excel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import ScheduleSettings from "@/components/ScheduleSettings"; // ✅ import do painel de configurações
+import ScheduleSettings from "@/components/ScheduleSettings";
 
 function AdminPanel({ onClose }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -16,13 +16,14 @@ function AdminPanel({ onClose }) {
     time: "",
     name: "",
     cpf: "",
+    phone: "",
   });
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
   const [password, setPassword] = useState("");
-  const [showSettings, setShowSettings] = useState(false); // ✅ controle para abrir/fechar config
+  const [showSettings, setShowSettings] = useState(false);
   const { toast } = useToast();
 
-  const ADMIN_PASSWORD = "Ak7vie9@"; // 🔒 senha de acesso
+  const ADMIN_PASSWORD = "Ak7vie9@";
 
   // 🔐 Verifica senha
   const handleLogin = () => {
@@ -67,9 +68,7 @@ function AdminPanel({ onClose }) {
 
     if (filters.program)
       filtered = filtered.filter((apt) =>
-        apt.program
-          ?.toLowerCase()
-          .includes(filters.program.toLowerCase().trim())
+        apt.program?.toLowerCase().includes(filters.program.toLowerCase().trim())
       );
 
     if (filters.date)
@@ -88,6 +87,11 @@ function AdminPanel({ onClose }) {
         apt.cpf?.replace(/\D/g, "").includes(filters.cpf.replace(/\D/g, ""))
       );
 
+    if (filters.phone)
+      filtered = filtered.filter((apt) =>
+        apt.phone?.replace(/\D/g, "").includes(filters.phone.replace(/\D/g, ""))
+      );
+
     // 🔽 Ordenação
     if (sortConfig.key) {
       filtered = [...filtered].sort((a, b) => {
@@ -104,7 +108,14 @@ function AdminPanel({ onClose }) {
 
   // 🧹 Limpar filtros
   const handleClearFilters = () => {
-    setFilters({ program: "", date: "", time: "", name: "", cpf: "" });
+    setFilters({
+      program: "",
+      date: "",
+      time: "",
+      name: "",
+      cpf: "",
+      phone: "",
+    });
   };
 
   // 🔽 Alternar ordenação
@@ -159,7 +170,7 @@ function AdminPanel({ onClose }) {
     );
   }
 
-  // ⚙️ Exibir tela de configurações
+  // ⚙️ Tela de configurações
   if (showSettings) {
     return <ScheduleSettings onClose={() => setShowSettings(false)} />;
   }
@@ -180,7 +191,7 @@ function AdminPanel({ onClose }) {
               Exportar Excel
             </Button>
             <Button
-              onClick={() => setShowSettings(true)} // ✅ abre tela de configurações
+              onClick={() => setShowSettings(true)}
               className="bg-blue-500 hover:bg-blue-600 text-white"
             >
               Configurações
@@ -195,7 +206,7 @@ function AdminPanel({ onClose }) {
         </div>
 
         {/* Filtros */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-3 mb-6">
           <select
             name="program"
             value={filters.program}
@@ -235,6 +246,13 @@ function AdminPanel({ onClose }) {
             value={filters.cpf}
             onChange={(e) => setFilters({ ...filters, cpf: e.target.value })}
           />
+          <Input
+            type="text"
+            name="phone"
+            placeholder="Telefone"
+            value={filters.phone}
+            onChange={(e) => setFilters({ ...filters, phone: e.target.value })}
+          />
           <Button
             onClick={handleClearFilters}
             className="bg-gray-200 hover:bg-gray-300 text-gray-700"
@@ -257,6 +275,7 @@ function AdminPanel({ onClose }) {
                     { label: "Programa", key: "program" },
                     { label: "Nome", key: "name" },
                     { label: "CPF", key: "cpf" },
+                    { label: "Telefone", key: "phone" },
                     { label: "Data", key: "date" },
                     { label: "Hora", key: "time" },
                   ].map((col) => (
@@ -282,6 +301,7 @@ function AdminPanel({ onClose }) {
                     <td className="border p-2">{apt.program}</td>
                     <td className="border p-2">{apt.name}</td>
                     <td className="border p-2">{apt.cpf}</td>
+                    <td className="border p-2">{apt.phone}</td>
                     <td className="border p-2">{apt.date}</td>
                     <td className="border p-2">{apt.time}</td>
                     <td className="border p-2 text-center">

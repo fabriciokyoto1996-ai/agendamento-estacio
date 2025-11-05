@@ -1,4 +1,3 @@
-// src/lib/storage.js
 import { db } from "./firebase";
 import {
   collection,
@@ -13,56 +12,60 @@ import {
 const COLLECTION = "agendamentos";
 const LOCAL_KEY = "scheduling_appointments";
 
-// tenta buscar do Firestore; se falhar, usa localStorage
+// 🔄 Busca todos os agendamentos (Firestore → fallback localStorage)
 export const getAppointments = async () => {
-  // Primeiro: tenta Firestore
   try {
     const q = query(collection(db, COLLECTION), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
-    const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    // salva um cache local (opcional) para fallback
+    const items = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data(),
+      phone: d.data().phone || "" // garante campo vazio se não existir
+    }));
+
     try {
       localStorage.setItem(LOCAL_KEY, JSON.stringify(items));
     } catch (e) {
-      // ignore
+      // ignora falhas de cache local
     }
+
     return items;
   } catch (err) {
     console.warn("Firestore read failed, falling back to localStorage:", err);
-    // fallback para localStorage
     try {
       const raw = localStorage.getItem(LOCAL_KEY);
-      return raw ? JSON.parse(raw) : [];
+      const parsed = raw ? JSON.parse(raw) : [];
+      // garante compatibilidade — adiciona phone se faltar
+      return parsed.map(item => ({ ...item, phone: item.phone || "" }));
     } catch (e) {
       return [];
     }
   }
 };
 
+// 💾 Salva novo agendamento (Firestore + cache local)
 export const saveAppointment = async (appointment) => {
-  // adiciona createdAt automaticamente se não existir
   const payload = {
     ...appointment,
+    phone: appointment.phone || "", // inclui telefone
     createdAt: appointment.createdAt ?? new Date().toISOString()
   };
 
-  // tenta salvar no Firestore; se falhar, salva no localStorage
   try {
     const ref = await addDoc(collection(db, COLLECTION), payload);
-    // atualiza cache local
+    const newItem = { id: ref.id, ...payload };
+
     try {
       const current = await getAppointments();
-      // coloca novo item no início (com id fornecido pelo Firestore)
-      const newItem = { id: ref.id, ...payload };
       localStorage.setItem(LOCAL_KEY, JSON.stringify([newItem, ...current]));
     } catch (e) {}
+
     return { ok: true, id: ref.id };
   } catch (err) {
     console.warn("Firestore write failed, saving to localStorage:", err);
     try {
       const raw = localStorage.getItem(LOCAL_KEY);
       const arr = raw ? JSON.parse(raw) : [];
-      // gerar id simples baseado no timestamp
       const id = Date.now().toString();
       const newItem = { id, ...payload };
       arr.unshift(newItem);
@@ -75,11 +78,10 @@ export const saveAppointment = async (appointment) => {
   }
 };
 
+// 🗑️ Exclui agendamento (Firestore → fallback localStorage)
 export const deleteAppointment = async (id) => {
-  // tenta Firestore, se falhar, remove do localStorage
   try {
     await deleteDoc(doc(db, COLLECTION, id));
-    // atualiza cache local
     try {
       const raw = localStorage.getItem(LOCAL_KEY);
       const arr = raw ? JSON.parse(raw) : [];
