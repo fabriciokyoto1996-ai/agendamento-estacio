@@ -25,20 +25,19 @@ const FormStep = ({ onSubmit }) => {
     }
   };
 
+  // ✅ Atualizado: só mostra a máscara enquanto o usuário digita
   const handlePhoneChange = (e) => {
-    // mantém apenas números e formata (XX) XXXXXXXX ou (XX) XXXXX-XXXX
     let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 11) value = value.slice(0, 11);
-    setPhone(value);
-  };
 
-  const formatPhone = (value) => {
-    const digits = value.replace(/\D/g, '');
-    if (digits.length <= 2) return `(${digits}`;
-    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    if (digits.length <= 10)
-      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+    if (value.length > 11) value = value.slice(0, 11);
+
+    if (value.length > 2 && value.length <= 7) {
+      value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+    } else if (value.length > 7) {
+      value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+    }
+
+    setPhone(value);
   };
 
   const validatePhone = (phone) => {
@@ -184,7 +183,7 @@ const FormStep = ({ onSubmit }) => {
             <Input
               id="phone"
               type="text"
-              value={formatPhone(phone)}
+              value={phone}
               onChange={handlePhoneChange}
               className="h-12 rounded-xl border-2 border-gray-200 focus:border-cyan-500"
               placeholder="(99) 99999-9999"
