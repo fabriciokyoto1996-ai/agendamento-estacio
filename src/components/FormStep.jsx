@@ -1,34 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { getAppointments } from '@/lib/storage';
+import { getAppointments, getSystemStatus } from '@/lib/storage';
 
 const FormStep = ({ onSubmit }) => {
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
   const [program, setProgram] = useState('');
+  const [systemStatus, setSystemStatus] = useState('ON'); // 🔘 status padrão
   const { toast } = useToast();
 
-  const validateCPF = (cpf) => {
-    const cleanCPF = cpf.replace(/\D/g, '');
-    return cleanCPF.length === 11;
-  };
+  // 🔄 Carrega o status do sistema
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const status = await getSystemStatus();
+        setSystemStatus(status);
+      } catch (err) {
+        console.error("Erro ao buscar status do sistema:", err);
+        setSystemStatus('ON'); // fallback
+      }
+    };
+    fetchStatus();
+  }, []);
+
+  const validateCPF = (cpf) => cpf.replace(/\D/g, '').length === 11;
 
   const handleCPFChange = (e) => {
     const value = e.target.value.replace(/\D/g, '');
-    if (value.length <= 11) {
-      setCpf(value);
-    }
+    if (value.length <= 11) setCpf(value);
   };
 
-  // ✅ Atualizado: só mostra a máscara enquanto o usuário digita
   const handlePhoneChange = (e) => {
     let value = e.target.value.replace(/\D/g, '');
-
     if (value.length > 11) value = value.slice(0, 11);
 
     if (value.length > 2 && value.length <= 7) {
@@ -48,65 +56,77 @@ const FormStep = ({ onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!name.trim()) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha o nome completo.",
-        variant: "destructive"
+    if (!name.trim())
+      return toast({
+        title: 'Erro',
+        description: 'Por favor, preencha o nome completo.',
+        variant: 'destructive',
       });
-      return;
-    }
 
-    if (!validateCPF(cpf)) {
-      toast({
-        title: "Erro",
-        description: "CPF deve conter 11 dígitos.",
-        variant: "destructive"
+    if (!validateCPF(cpf))
+      return toast({
+        title: 'Erro',
+        description: 'CPF deve conter 11 dígitos.',
+        variant: 'destructive',
       });
-      return;
-    }
 
-    if (!validatePhone(phone)) {
-      toast({
-        title: "Erro",
-        description: "Telefone inválido. Insira DDD + número.",
-        variant: "destructive"
+    if (!validatePhone(phone))
+      return toast({
+        title: 'Erro',
+        description: 'Telefone inválido. Insira DDD + número.',
+        variant: 'destructive',
       });
-      return;
-    }
 
-    if (!program) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione um programa (FIES ou PROUNI).",
-        variant: "destructive"
+    if (!program)
+      return toast({
+        title: 'Erro',
+        description: 'Por favor, selecione um programa (FIES ou PROUNI).',
+        variant: 'destructive',
       });
-      return;
-    }
 
     let appointments = [];
     try {
       appointments = await getAppointments();
       if (!Array.isArray(appointments)) appointments = [];
-    } catch (err) {
-      console.warn("Erro ao carregar agendamentos:", err);
+    } catch {
       appointments = [];
     }
 
-    const existingAppointment = appointments.find(apt => apt.cpf === cpf);
-
-    if (existingAppointment) {
-      toast({
-        title: "Erro",
-        description: "Este CPF já possui um agendamento.",
-        variant: "destructive"
+    const existingAppointment = appointments.find((apt) => apt.cpf === cpf);
+    if (existingAppointment)
+      return toast({
+        title: 'Erro',
+        description: 'Este CPF já possui um agendamento.',
+        variant: 'destructive',
       });
-      return;
-    }
 
     onSubmit({ name, cpf, phone, program });
   };
 
+  // 📴 Se o sistema estiver OFF, mostra aviso
+  if (systemStatus === 'OFF') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="max-w-md mx-auto text-center"
+      >
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-10">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            Fora do período de agendamento
+          </h2>
+          <p className="text-gray-600">
+            No momento, o sistema de agendamento está desativado.
+            <br />
+            Por favor, retorne mais tarde.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // 🧾 Formulário normal
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}

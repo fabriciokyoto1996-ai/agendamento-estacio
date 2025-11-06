@@ -1,3 +1,4 @@
+// src/lib/storage.js
 import { db } from "./firebase";
 import {
   collection,
@@ -6,10 +7,13 @@ import {
   deleteDoc,
   doc,
   query,
-  orderBy
+  orderBy,
+  setDoc,
+  getDoc
 } from "firebase/firestore";
 
 const COLLECTION = "agendamentos";
+const SETTINGS_COLLECTION = "configuracoes"; // nova coleção para status
 const LOCAL_KEY = "scheduling_appointments";
 
 // 🔄 Busca todos os agendamentos (Firestore → fallback localStorage)
@@ -101,5 +105,49 @@ export const deleteAppointment = async (id) => {
       console.error("Failed to delete locally:", e);
       return false;
     }
+  }
+};
+
+// 🧹 Apagar todos os agendamentos (Firestore + localStorage)
+export const deleteAllAppointments = async () => {
+  try {
+    const snapshot = await getDocs(collection(db, COLLECTION));
+    const batchDeletes = snapshot.docs.map((d) => deleteDoc(doc(db, COLLECTION, d.id)));
+    await Promise.all(batchDeletes);
+
+    localStorage.removeItem(LOCAL_KEY);
+    console.log("Todos os agendamentos foram excluídos.");
+    return true;
+  } catch (err) {
+    console.error("Erro ao apagar todos os agendamentos:", err);
+    throw err;
+  }
+};
+
+// ⚙️ Obter status do sistema (ON/OFF)
+export const getSystemStatus = async () => {
+  try {
+    const ref = doc(db, SETTINGS_COLLECTION, "sistema");
+    const snapshot = await getDoc(ref);
+    if (snapshot.exists()) {
+      return snapshot.data().status || "ON";
+    }
+    return "ON";
+  } catch (err) {
+    console.error("Erro ao buscar status do sistema:", err);
+    return "ON"; // fallback
+  }
+};
+
+// ⚙️ Definir status do sistema (ON/OFF)
+export const setSystemStatus = async (status) => {
+  try {
+    const ref = doc(db, SETTINGS_COLLECTION, "sistema");
+    await setDoc(ref, { status, updatedAt: new Date().toISOString() });
+    console.log("Status atualizado para:", status);
+    return true;
+  } catch (err) {
+    console.error("Erro ao definir status do sistema:", err);
+    throw err;
   }
 };
